@@ -33,11 +33,11 @@ jobs:
         echo "$HOME/gradle/gradle-8.7/bin" >> "$GITHUB_PATH"
         gradle --version
 
-    #- name: Build with Gradle
-    #  run: gradle :app:assemble
+    - name: Build with Gradle
+      run: gradle :app:assembleDebug
 
-    - name: List Gradle tasks (app)
-      run: gradle -q :app:tasks --all
+    #- name: List Gradle tasks (app)
+    #  run: gradle -q :app:tasks --all
 
     - name: Show outputs tree
       run: |
