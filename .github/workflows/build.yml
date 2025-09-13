@@ -36,10 +36,23 @@ jobs:
 #    - name: List Gradle tasks (app)
 #      run: gradle -q :app:tasks --all
     - name: Build with Gradle
-      run: gradle :app:build
+      run: gradle :app:assemble
 
-    - name: Upload APK
+#    - name: Upload APK
+#      uses: actions/upload-artifact@v4
+#      with:
+#        name: myapp-debug-apk
+#        path: app/build/outputs/apk/debug/*.apk
+
+- name: Show outputs tree
+      run: |
+        ls -R app/build/outputs || true
+
+    - name: Upload artifacts (APK/AAB)
+      if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: myapp-debug-apk
-        path: app/build/outputs/apk/debug/*.apk
+        name: myapp-build-outputs
+        path: |
+          app/build/outputs/apk/**/*.apk
+          app/build/outputs/bundle/**/*.aab
