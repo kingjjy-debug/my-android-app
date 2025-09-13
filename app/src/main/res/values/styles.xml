@@ -1,6 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 앱 전체에서 사용할 안전한 AppCompat 테마 -->
     <style name="Theme.MyApp" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- 필요하면 여기서 색상 등 커스터마이즈 -->
+        <!-- Customize your theme here. -->
+        <!-- <item name="colorPrimary">@color/my_primary</item> -->
     </style>
 </resources>

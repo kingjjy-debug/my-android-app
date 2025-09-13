@@ -23,17 +23,15 @@ class MainActivity : AppCompatActivity() {
 
         buttonJunyoung.setOnClickListener {
             countJunyoung++
-            textView.text = "박지혜 사랑해\n버튼 $countJunyoung번 누름"
+            textView.text = "박지혜 사랑해\n버튼 ${countJunyoung}번 누름"
         }
-
         buttonJihye.setOnClickListener {
             countJihye++
-            textView.text = "장준영 사랑해\n버튼 $countJihye번 누름"
+            textView.text = "장준영 사랑해\n버튼 ${countJihye}번 누름"
         }
-
         buttonYuju.setOnClickListener {
             countYuju++
-            textView.text = "코야하기 싫어어\n버튼 $countYuju번 누름"
+            textView.text = "코야하기 싫어어\n버튼 ${countYuju}번 누름"
         }
     }
 }
