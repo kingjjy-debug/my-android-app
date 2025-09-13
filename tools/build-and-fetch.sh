@@ -21,6 +21,7 @@ fi
 
 echo "[1/6] 코드 생성 (Gemini)"
 node tools/gen-from-description.js app_description.txt
+"$ROOT_DIR/tools/preflight-stabilize.sh"
 
 echo "[2/6] Git 커밋 & 푸시"
 git add -A
