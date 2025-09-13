@@ -1,6 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- AppCompat 기반의 최소 테마 -->
     <style name="Theme.MyApp" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- 선택: 상태바 투명 등 필요한 항목이 있으면 여기에 추가 -->
+        <!-- Customize your theme here. -->
+        <!-- <item name="colorPrimary">@color/my_primary</item> -->
     </style>
 </resources>

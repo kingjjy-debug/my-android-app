@@ -1,0 +1,12 @@
+다음 요구사항에 맞춰 안드로이드 코드를 생성해 주세요.
+
+**앱 아이디어:**
+버튼을 누를 때마다 "안녕하세요!" 라는 글자가 나타나고 숫자가 1씩 증가하는 간단한 앱.
+
+**세부 요구사항:**
+- 시작 화면에 버튼(아이디: button)과 텍스트(아이디: textView)가 배치되어야 함
+- 버튼을 누를 때마다 textView에 "안녕하세요! (N)" 형식으로 숫자 증가 표시
+- Kotlin + AppCompat 기반
+- 패키지명: com.example.myapplication
+- 런처 액티비티: MainActivity
+- 필요한 경우 values/styles.xml에 AppCompat 테마 정의 (Theme.AppCompat.Light.NoActionBar)
