@@ -1,7 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 최소 동작용 테마 두 개를 모두 정의: -->
-    <style name="Theme.MyApp" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- 필요시 색상 등을 추후 추가 -->
+    <!-- 
+        Base application theme. 
+        For more details on Material 3 themes, see: https://developer.android.com/jetpack/compose/design-systems/material3
+    -->
+    <style name="Theme.MyApplication" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your theme here. -->
     </style>
-    <style name="Theme.MyApplication" parent="Theme.AppCompat.Light.NoActionBar"/>
 </resources>

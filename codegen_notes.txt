@@ -1,1 +1,1 @@
-ScrollView와 동적 뷰 생성을 사용하여, 요청된 파일 수(4개)를 유지하면서 기능 요건을 충족시켰습니다. 실제 프로덕션 앱에서는 RecyclerView와 별도의 item layout 파일을 사용하는 것이 더 효율적입니다.
+Jetpack Compose를 사용하여 단일 화면 UI를 구성하였으며, SharedPreferences를 통해 각 항목의 완료 상태를 기기에 저장하고 매일 자정에 자동으로 초기화합니다.
