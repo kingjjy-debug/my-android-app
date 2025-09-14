@@ -5,7 +5,7 @@
     <application
         android:allowBackup="true"
         
-        android:label="대한항공 마일리지 모으기"
+        android:label="@string/app_name"
         
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
