@@ -1,12 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme. -->
-    <style name="Theme.MyApp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
-        <!--
-        <item name="colorPrimary">@color/my_light_primary</item>
-        <item name="colorPrimaryVariant">@color/my_light_primary_variant</item>
-        <item name="colorOnPrimary">@color/white</item>
-        -->
+    <!-- 최소 동작용 테마 두 개를 모두 정의: -->
+    <style name="Theme.MyApp" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- 필요시 색상 등을 추후 추가 -->
     </style>
+    <style name="Theme.MyApplication" parent="Theme.AppCompat.Light.NoActionBar"/>
 </resources>
