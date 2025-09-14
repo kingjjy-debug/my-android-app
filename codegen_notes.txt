@@ -1,1 +1,1 @@
-1. 필요한 라이브러리(cardview, constraintlayout) 추가 필요. 2. PointData 클래스는 실제 데이터와 매칭되도록 수정해야 함. 3. Material 3 디자인 요소 추가 및 다크모드 적용은 추가 작업 필요.
+MainActivity.kt에 UI 갱신 및 SharedPreference 처리 코드 추가 필요. points.json 파일을 assets 폴더에 넣어야 합니다.  Material Design 3 적용 및 다크모드 지원을 위해 추가적인 작업 필요.
