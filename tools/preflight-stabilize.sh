@@ -1,126 +1,73 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/bash
 set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-APP_DIR="${APP_DIR:-$HOME/myapp}"
-RES_DIR="$APP_DIR/app/src/main/res"
-MANIFEST="$APP_DIR/app/src/main/AndroidManifest.xml"
-STRINGS="$RES_DIR/values/strings.xml"
-GRADLE_PROPS="$APP_DIR/gradle.properties"
-APP_GRADLE="$APP_DIR/app/build.gradle.kts"
+# AndroidX 강제
+grep -q '^android.useAndroidX=true$' "$ROOT/gradle.properties" 2>/dev/null || echo 'android.useAndroidX=true' >> "$ROOT/gradle.properties"
+grep -q '^android.enableJetifier=true$' "$ROOT/gradle.properties" 2>/dev/null || echo 'android.enableJetifier=true' >> "$ROOT/gradle.properties"
 
-echo "[preflight] 시작"
+# namespace 추출(없으면 기본값)
+NS="$(sed -n 's/.*namespace *= *"\([^"]*\)".*/\1/p' "$ROOT/app/build.gradle.kts" | head -n1)"
+[ -z "${NS:-}" ] && NS="com.example.myapplication"
 
-# 1) gradle.properties 안전 옵션 보강
-mkdir -p "$APP_DIR"
-touch "$GRADLE_PROPS"
-grep -q '^android.useAndroidX=true' "$GRADLE_PROPS" || echo 'android.useAndroidX=true' >> "$GRADLE_PROPS"
-grep -q '^kotlin.code.style=official' "$GRADLE_PROPS" || echo 'kotlin.code.style=official' >> "$GRADLE_PROPS"
-
-# 2) strings.xml 보장 (app_name)
-mkdir -p "$RES_DIR/values"
-if ! grep -q '<string name="app_name">' "$STRINGS" 2>/dev/null; then
-  cat > "$STRINGS" <<'EOF'
-<resources>
-    <string name="app_name">MyApp</string>
-</resources>
-EOF
+# Manifest 정리
+MAN="$ROOT/app/src/main/AndroidManifest.xml"
+if [ -f "$MAN" ]; then
+  sed -i 's/ *package="[^"]*"//g' "$MAN"
+  sed -i 's/android:icon="@mipmap\/ic_launcher"/android:icon="@android:drawable\/ic_dialog_info"/g' "$MAN"
+  sed -i 's/android:roundIcon="@mipmap\/ic_launcher_round"//g' "$MAN"
+  if ! grep -q 'android:exported=' "$MAN"; then
+    sed -i 's,<activity ,<activity android:exported="true" ,g' "$MAN"
+  fi
 fi
 
-# 3) 기본 런처 아이콘(적응형) 세트 주입 (있으면 건드리지 않음)
-mkdir -p "$RES_DIR/mipmap-anydpi-v26" "$RES_DIR/drawable" "$RES_DIR/values"
-if [ ! -f "$RES_DIR/mipmap-anydpi-v26/ic_launcher.xml" ]; then
-  cat > "$RES_DIR/mipmap-anydpi-v26/ic_launcher.xml" <<'EOF'
+# MainActivity 패키지/임포트 보정
+MA="$ROOT/app/src/main/java/${NS//.//}/MainActivity.kt"
+if [ -f "$MA" ]; then
+  sed -i "1s,^package .*$,package $NS," "$MA"
+  grep -q 'import android.os.Bundle' "$MA" || sed -i '1i\import android.os.Bundle' "$MA"
+  grep -q 'import androidx.appcompat.app.AppCompatActivity' "$MA" || sed -i '1i\import androidx.appcompat.app.AppCompatActivity' "$MA"
+  grep -q 'import android.widget.*' "$MA" || sed -i '1i\import android.widget.*' "$MA"
+fi
+
+# 기본 레이아웃(누락 시 생성)
+LAY="$ROOT/app/src/main/res/layout/activity_main.xml"
+if [ ! -f "$LAY" ]; then
+cat > "$LAY" <<XML
 <?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/ic_launcher_background"/>
-    <foreground android:drawable="@drawable/ic_launcher_foreground"/>
-</adaptive-icon>
-EOF
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical"
+  android:gravity="center">
+  <TextView
+    android:id="@+id/textView"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Hello"/>
+</LinearLayout>
+XML
 fi
-if [ ! -f "$RES_DIR/mipmap-anydpi-v26/ic_launcher_round.xml" ]; then
-  cat > "$RES_DIR/mipmap-anydpi-v26/ic_launcher_round.xml" <<'EOF'
-<?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/ic_launcher_background"/>
-    <foreground android:drawable="@drawable/ic_launcher_foreground"/>
-</adaptive-icon>
-EOF
+
+# versionCode 자동 +1
+BG="$ROOT/app/build.gradle.kts"
+if [ -f "$BG" ]; then
+  CUR=$(sed -n 's/.*versionCode *= *\([0-9][0-9]*\).*/\1/p' "$BG" | head -n1 || true)
+  if [ -n "$CUR" ]; then
+    NEW=$((CUR+1))
+    sed -i "s/versionCode *= *$CUR/versionCode = $NEW/" "$BG"
+  fi
 fi
-if [ ! -f "$RES_DIR/drawable/ic_launcher_foreground.xml" ]; then
-  cat > "$RES_DIR/drawable/ic_launcher_foreground.xml" <<'EOF'
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#202124" android:pathData="M0,0h108v108h-108z"/>
-    <!-- 간단한 A 모양 -->
-    <path android:fillColor="#3DDC84"
-        android:pathData="M54,18 L78,90 L66,90 L60,72 L48,72 L42,90 L30,90 Z"/>
-</vector>
-EOF
-fi
-if ! grep -q 'name="ic_launcher_background"' "$RES_DIR/values/ic_launcher_background.xml" 2>/dev/null; then
-  cat > "$RES_DIR/values/ic_launcher_background.xml" <<'EOF'
+
+# strings.xml 최소 보정(누락 시 생성)
+STR="$ROOT/app/src/main/res/values/strings.xml"
+mkdir -p "$(dirname "$STR")"
+if [ ! -f "$STR" ]; then
+cat > "$STR" <<XML
 <resources>
-    <color name="ic_launcher_background">#121212</color>
+  <string name="app_name">MyApp</string>
 </resources>
-EOF
+XML
 fi
 
-# 4) Manifest 정규화
-# - package 속성 제거(Gradle namespace 사용)
-# - application에 icon/roundIcon/label/allowBackup/supportsRtl/Theme 보장
-# - MAIN/LAUNCHER Activity의 exported 보장
-if [ -f "$MANIFEST" ]; then
-  # package 속성 제거
-  if grep -q 'package=' "$MANIFEST"; then
-    sed -i 's/\s\+package="[^"]*"\s*/ /' "$MANIFEST"
-  fi
-
-  # application 태그 보강
-  if ! grep -q 'android:icon=' "$MANIFEST"; then
-    sed -i 's#<application#<application android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"#' "$MANIFEST"
-  fi
-  if ! grep -q 'android:label=' "$MANIFEST"; then
-    sed -i 's#<application#<application android:label="@string/app_name"#' "$MANIFEST"
-  fi
-  if ! grep -q 'android:supportsRtl=' "$MANIFEST"; then
-    sed -i 's#<application#<application android:supportsRtl="true"#' "$MANIFEST"
-  fi
-  if ! grep -q 'android:allowBackup=' "$MANIFEST"; then
-    sed -i 's#<application#<application android:allowBackup="true"#' "$MANIFEST"
-  fi
-  if ! grep -q 'android:theme=' "$MANIFEST"; then
-    sed -i 's#<application#<application android:theme="@style/Theme.MyApp"#' "$MANIFEST"
-  fi
-
-  # MAIN/LAUNCHER Activity exported 보장
-  if grep -q 'android.intent.category.LAUNCHER' "$MANIFEST"; then
-    # LAUNCHER를 가진 activity 블록에 exported="true" 주입(이미 있으면 유지)
-    awk '
-      BEGIN{inAct=0}
-      /<activity/{inAct=1}
-      inAct && /android.intent.category.LAUNCHER/ { need=1 }
-      inAct && /<\/activity>/{ 
-        if (need && $0 !~ /exported=/) print gensub(/<activity /,"<activity android:exported=\"true\" ","g",$0); 
-        else print $0; 
-        inAct=0; need=0; next 
-      }
-      { print $0 }
-    ' "$MANIFEST" > "$MANIFEST.tmp" && mv "$MANIFEST.tmp" "$MANIFEST"
-  fi
-fi
-
-# 5) app/build.gradle.kts 필수 의존성 확인
-if [ -f "$APP_GRADLE" ]; then
-  # core-ktx/appcompat/material/constraintlayout 가 없으면 추가
-  grep -q 'androidx.core:core-ktx' "$APP_GRADLE" || \
-    sed -i '/dependencies\s*{.*/a \ \ \ \ implementation("androidx.core:core-ktx:1.13.1")' "$APP_GRADLE"
-  grep -q 'androidx.appcompat:appcompat' "$APP_GRADLE" || \
-    sed -i '/dependencies\s*{.*/a \ \ \ \ implementation("androidx.appcompat:appcompat:1.7.0")' "$APP_GRADLE"
-  grep -q 'com.google.android.material:material' "$APP_GRADLE" || \
-    sed -i '/dependencies\s*{.*/a \ \ \ \ implementation("com.google.android.material:material:1.12.0")' "$APP_GRADLE"
-  grep -q 'androidx.constraintlayout:constraintlayout' "$APP_GRADLE" || \
-    sed -i '/dependencies\s*{.*/a \ \ \ \ implementation("androidx.constraintlayout:constraintlayout:2.1.4")' "$APP_GRADLE"
-fi
-
-echo "[preflight] 완료"
+echo "✅ preflight-stabilize: 기본 안정화 완료"

@@ -1,1 +1,1 @@
-버튼 클릭 기능은 구현되지 않았습니다.  SharedPreferences를 이용한 완료 상태 저장 및 초기화 로직 추가했습니다. UI는 activity_main.xml에 추가적인 요소를 추가해야 합니다.
+1. 필요한 라이브러리(cardview, constraintlayout) 추가 필요. 2. PointData 클래스는 실제 데이터와 매칭되도록 수정해야 함. 3. Material 3 디자인 요소 추가 및 다크모드 적용은 추가 작업 필요.

@@ -34,7 +34,9 @@ jobs:
         gradle --version
 
     - name: Build with Gradle
-      run: gradle :app:assembleDebug
+      run: |
+        gradle clean
+        gradle :app:assembleDebug
 
     #- name: List Gradle tasks (app)
     #  run: gradle -q :app:tasks --all

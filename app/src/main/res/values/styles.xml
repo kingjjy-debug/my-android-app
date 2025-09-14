@@ -2,6 +2,6 @@
 <resources>
     <style name="Theme.MyApp" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Customize your theme here. -->
-        <!-- <item name="colorPrimary">#6200EE</item> -->
+        <!-- <item name="colorPrimary">@color/my_primary</item> -->
     </style>
 </resources>
