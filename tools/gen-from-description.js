@@ -1,104 +1,111 @@
-// Simple Android code generator using Gemini (no gemini-CLI needed)
-// Usage: GEMINI_API_KEY=... node tools/gen-from-description.js app_description.txt
-
 import fs from "fs";
 import path from "path";
-import process from "process";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  console.error("Error: set GEMINI_API_KEY env var first.");
-  process.exit(1);
-}
-const inputPath = process.argv[2] || "app_description.txt";
-if (!fs.existsSync(inputPath)) {
-  console.error(`Error: ${inputPath} not found.`);
-  process.exit(1);
-}
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const genAI = new GoogleGenerativeAI(apiKey);
-// 빠르고 저렴: 1.5-flash / 더 정밀: 1.5-pro
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+/** 모델 출력에서 JSON만 안전하게 뽑아내기 */
+function safeParseJson(raw) {
+  let s = String(raw ?? "").trim();
 
-const description = fs.readFileSync(inputPath, "utf8");
+  // 코드펜스 제거
+  s = s.replace(/^```json\s*/i, "")
+       .replace(/^```\s*/i, "")
+       .replace(/```$/i, "").trim();
 
-// 모델에게 “파일 목록 JSON”으로 달라고 요청 (Markdown 금지)
-const systemPrompt = `
-당신은 안드로이드 앱 코드를 생성하는 도우미입니다.
-출력은 반드시 "JSON 하나"로만, 마크다운/설명/코드펜스 금지.
+  // 1) 바로 파싱
+  try { return JSON.parse(s); } catch {}
 
-JSON 스키마:
-{
-  "files": [
-    { "path": "<상대경로>", "content": "<파일내용>" },
-    ...
-  ],
-  "notes": "<선택: 생성 시 주의사항 요약>"
+  // 2) 첫 '{' ~ 마지막 '}' 범위
+  const first = s.indexOf("{");
+  const last  = s.lastIndexOf("}");
+  if (first !== -1 && last !== -1 && last > first) {
+    const mid = s.slice(first, last + 1);
+    try { return JSON.parse(mid); } catch {}
+  }
+
+  // 3) 흔한 꼬리쉼표 제거
+  const noTrailing = s.replace(/,\s*([}\]])/g, "$1");
+  try { return JSON.parse(noTrailing); } catch {}
+
+  throw new Error("Model output is not valid JSON");
 }
 
-요구사항:
-- Android/Kotlin + AppCompat 사용
-- 최소 구성: AndroidManifest.xml, MainActivity.kt, activity_main.xml
-- 패키지명: com.example.myapplication
-- MainActivity는 버튼(@+id/button)과 텍스트(@+id/textView)를 사용
-- 버튼 클릭마다 "안녕하세요! (N)"로 textView 갱신
-- Manifest는 package, exported=true, MAIN/LAUNCHER, application theme 포함
-- values/styles.xml 에 Theme.MyApp (Theme.AppCompat.Light.NoActionBar 상속)
-- Gradle 스크립트는 이미 있으므로 필요 시에만 files에 추가
+/** 경로를 반드시 app/src/main 하위로 강제 */
+function normalizeOutPath(p) {
+  const posix = path.posix;
+  if (p.startsWith("app/")) return p;
+  if (p.startsWith("src/main/")) return posix.join("app", p);
+  if (p === "AndroidManifest.xml") return "app/src/main/AndroidManifest.xml";
+  return posix.join("app/src/main", p);
+}
 
-반드시 위 JSON 형식만 출력.
-`;
+function ensureDirs(fp) {
+  fs.mkdirSync(path.dirname(fp), { recursive: true });
+}
 
 async function main() {
-  const prompt = [
-    systemPrompt,
-    "",
-    "=== 사용자 요구사항(app_description.txt) ===",
-    description,
-  ].join("\n");
+  const descPath = process.argv[2] || "app_description.txt";
+  const prompt = fs.readFileSync(descPath, "utf8");
 
-  const result = await model.generateContent(prompt);
-  let text = result.response.text().trim();
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  // JSON만 남도록 코드펜스/앞뒤 여분 제거
-  if (text.startsWith("```")) {
-    text = text.replace(/^```(?:json)?\s*/i, "")
-               .replace(/```$/, "")
-               .trim();
-  }
+  const schema = `
+당신은 안드로이드 앱 코드 생성기입니다.
+반드시 **아래 JSON 하나만** 출력하세요. (설명/마크다운/코드펜스 금지)
 
-  let parsed;
+{
+  "files": [
+    {"path": "app/src/main/AndroidManifest.xml", "content": "<xml...>"},
+    {"path": "app/src/main/java/com/example/myapplication/MainActivity.kt", "content": "..."},
+    {"path": "app/src/main/res/layout/activity_main.xml", "content": "..."},
+    {"path": "app/src/main/res/values/styles.xml", "content": "..."}
+  ],
+  "notes": "선택사항"
+}
+
+규칙:
+- 모든 파일 경로는 반드시 app/src/main/ 하위(혹은 정확히 위 표기)로만.
+- JSON 외 텍스트 절대 금지.
+`;
+
+  const input = `${schema}\n\n요구사항:\n${prompt}\n\n주의:\n- 경로 강제(app/src/main).\n- JSON 이외 출력 금지.`;
+
+  const resp = await model.generateContent(input);
+  const text = resp.response.text();
+
+  let obj;
   try {
-    parsed = JSON.parse(text);
+    obj = safeParseJson(text);
   } catch (e) {
     console.error("Model did not return valid JSON. Raw output:\n", text);
-    process.exit(1);
+    throw e;
   }
 
-  if (!parsed.files || !Array.isArray(parsed.files)) {
-    console.error("JSON missing 'files' array.");
-    process.exit(1);
+  const files = Array.isArray(obj.files) ? obj.files : [];
+  for (const f of files) {
+    const outPath = normalizeOutPath(String(f.path || "").trim());
+    ensureDirs(outPath);
+    fs.writeFileSync(outPath, String(f.content ?? ""), "utf8");
+    console.log(`Wrote: ${outPath}`);
   }
 
-  // 파일 쓰기
-  for (const f of parsed.files) {
-    const outPath = path.join(process.cwd(), f.path);
-    fs.mkdirSync(path.dirname(outPath), { recursive: true });
-    fs.writeFileSync(outPath, f.content, "utf8");
-    console.log("Wrote:", f.path);
-  }
-
-  // 요약 노트 저장(선택)
-  if (parsed.notes) {
-    fs.writeFileSync("codegen_notes.txt", parsed.notes, "utf8");
+  if (obj.notes) {
+    fs.writeFileSync("codegen_notes.txt", String(obj.notes), "utf8");
     console.log("Wrote: codegen_notes.txt");
   }
 
   console.log("\n✅ Code generation done. Review changes, then build via CI.");
 }
 
-main().catch(err => {
-  console.error(err);
+// 안전장치: 핸들되지 않은 예외 표시
+process.on("unhandledRejection", (e) => {
+  console.error("UnhandledRejection:", e);
   process.exit(1);
 });
+process.on("uncaughtException", (e) => {
+  console.error("UncaughtException:", e);
+  process.exit(1);
+});
+
+await main();

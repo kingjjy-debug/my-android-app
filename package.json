@@ -1,23 +1,7 @@
 {
-  "name": "myapp",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/kingjjy-debug/my-android-app.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/kingjjy-debug/my-android-app/issues"
-  },
-  "homepage": "https://github.com/kingjjy-debug/my-android-app#readme",
+  "name": "myapp-tools",
+  "type": "module",
   "dependencies": {
-    "@google/generative-ai": "^0.24.1"
+    "@google/generative-ai": "^0.21.0"
   }
 }
