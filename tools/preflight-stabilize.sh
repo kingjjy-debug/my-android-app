@@ -1,73 +1,85 @@
 #!/data/data/com.termux/files/usr/bin/bash
+# Fix misplaced sources & sanitize manifest before pushing/CI
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-# AndroidX 강제
-grep -q '^android.useAndroidX=true$' "$ROOT/gradle.properties" 2>/dev/null || echo 'android.useAndroidX=true' >> "$ROOT/gradle.properties"
-grep -q '^android.enableJetifier=true$' "$ROOT/gradle.properties" 2>/dev/null || echo 'android.enableJetifier=true' >> "$ROOT/gradle.properties"
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+APP_DIR="$ROOT_DIR/app"
+MAIN_DIR="$APP_DIR/src/main"
 
-# namespace 추출(없으면 기본값)
-NS="$(sed -n 's/.*namespace *= *"\([^"]*\)".*/\1/p' "$ROOT/app/build.gradle.kts" | head -n1)"
-[ -z "${NS:-}" ] && NS="com.example.myapplication"
+mkdir -p "$MAIN_DIR/java" "$MAIN_DIR/res" "$APP_DIR/src" "$ROOT_DIR/src" || true
 
-# Manifest 정리
-MAN="$ROOT/app/src/main/AndroidManifest.xml"
-if [ -f "$MAN" ]; then
-  sed -i 's/ *package="[^"]*"//g' "$MAN"
-  sed -i 's/android:icon="@mipmap\/ic_launcher"/android:icon="@android:drawable\/ic_dialog_info"/g' "$MAN"
-  sed -i 's/android:roundIcon="@mipmap\/ic_launcher_round"//g' "$MAN"
-  if ! grep -q 'android:exported=' "$MAN"; then
-    sed -i 's,<activity ,<activity android:exported="true" ,g' "$MAN"
-  fi
+echo "🔧 preflight-stabilize: 시작"
+
+# 1) root에 잘못 생성된 src/main -> app/src/main 으로 이동
+if [ -d "$ROOT_DIR/src/main" ]; then
+  echo "  • root/src/main → app/src/main 으로 이동"
+  rsync -a --remove-source-files "$ROOT_DIR/src/main/" "$MAIN_DIR/" || true
+  # 빈 디렉터리 정리
+  find "$ROOT_DIR/src" -type d -empty -delete || true
 fi
 
-# MainActivity 패키지/임포트 보정
-MA="$ROOT/app/src/main/java/${NS//.//}/MainActivity.kt"
-if [ -f "$MA" ]; then
-  sed -i "1s,^package .*$,package $NS," "$MA"
-  grep -q 'import android.os.Bundle' "$MA" || sed -i '1i\import android.os.Bundle' "$MA"
-  grep -q 'import androidx.appcompat.app.AppCompatActivity' "$MA" || sed -i '1i\import androidx.appcompat.app.AppCompatActivity' "$MA"
-  grep -q 'import android.widget.*' "$MA" || sed -i '1i\import android.widget.*' "$MA"
+# 2) root에 잘못 생성된 AndroidManifest.xml → app/src/main/AndroidManifest.xml
+if [ -f "$ROOT_DIR/AndroidManifest.xml" ]; then
+  echo "  • root/AndroidManifest.xml → app/src/main/AndroidManifest.xml 이동(덮어쓰기)"
+  mv -f "$ROOT_DIR/AndroidManifest.xml" "$MAIN_DIR/AndroidManifest.xml"
 fi
 
-# 기본 레이아웃(누락 시 생성)
-LAY="$ROOT/app/src/main/res/layout/activity_main.xml"
-if [ ! -f "$LAY" ]; then
-cat > "$LAY" <<XML
+# 3) 기존 app/src/main/AndroidManifest.xml이 없다면 최소 골격 생성
+if [ ! -f "$MAIN_DIR/AndroidManifest.xml" ]; then
+  echo "  • AndroidManifest.xml 기본 템플릿 생성"
+  cat > "$MAIN_DIR/AndroidManifest.xml" <<'XML'
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-  android:layout_width="match_parent"
-  android:layout_height="match_parent"
-  android:orientation="vertical"
-  android:gravity="center">
-  <TextView
-    android:id="@+id/textView"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="Hello"/>
-</LinearLayout>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application
+      android:allowBackup="true"
+      android:supportsRtl="true"
+      android:label="MyApp">
+    <activity
+        android:name=".MainActivity"
+        android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>
 XML
 fi
 
-# versionCode 자동 +1
-BG="$ROOT/app/build.gradle.kts"
-if [ -f "$BG" ]; then
-  CUR=$(sed -n 's/.*versionCode *= *\([0-9][0-9]*\).*/\1/p' "$BG" | head -n1 || true)
-  if [ -n "$CUR" ]; then
-    NEW=$((CUR+1))
-    sed -i "s/versionCode *= *$CUR/versionCode = $NEW/" "$BG"
-  fi
+# 4) Manifest 정리: package 속성 제거(Gradle namespace 사용), exported 누락 방지
+# - package 속성은 이제 무시/경고 대상이므로 있으면 지운다.
+if grep -q 'package=' "$MAIN_DIR/AndroidManifest.xml"; then
+  echo "  • AndroidManifest.xml에서 package 속성 제거"
+  # 단순 제거: package="..."; 를 삭제
+  sed -i 's/ *package="[^"]*"//g' "$MAIN_DIR/AndroidManifest.xml"
 fi
 
-# strings.xml 최소 보정(누락 시 생성)
-STR="$ROOT/app/src/main/res/values/strings.xml"
-mkdir -p "$(dirname "$STR")"
-if [ ! -f "$STR" ]; then
-cat > "$STR" <<XML
+# 5) 앱 아이콘 참조 때문에 빌드가 깨지는 경우를 막기 위해,
+#    manifest에 @mipmap/ic_launcher, @mipmap/ic_launcher_round 같은 참조가 있다면 우선 제거(선택)
+#    * 나중에 실제 아이콘을 넣고 싶으면 values/strings와 mipmap 리소스를 추가하면 됨
+if grep -q '@mipmap/ic_launcher' "$MAIN_DIR/AndroidManifest.xml" || grep -q '@mipmap/ic_launcher_round' "$MAIN_DIR/AndroidManifest.xml"; then
+  echo "  • 아이콘 참조 제거(아이콘 미제공 시 빌드 실패 예방)"
+  sed -i 's/android:icon="@mipmap\/ic_launcher"//g' "$MAIN_DIR/AndroidManifest.xml"
+  sed -i 's/android:roundIcon="@mipmap\/ic_launcher_round"//g' "$MAIN_DIR/AndroidManifest.xml"
+fi
+
+# 6) strings.xml 최소 보장 (app_name 없으면 warning/실패 가능)
+VALUES_DIR="$MAIN_DIR/res/values"
+mkdir -p "$VALUES_DIR"
+if [ ! -f "$VALUES_DIR/strings.xml" ]; then
+  echo "  • values/strings.xml 기본 생성"
+  cat > "$VALUES_DIR/strings.xml" <<'XML'
 <resources>
-  <string name="app_name">MyApp</string>
+    <string name="app_name">MyApp</string>
 </resources>
 XML
 fi
 
-echo "✅ preflight-stabilize: 기본 안정화 완료"
+# 7) Gradle 모듈 구조 점검(간단 체크)
+if [ ! -f "$APP_DIR/build.gradle.kts" ] && [ ! -f "$APP_DIR/build.gradle" ]; then
+  echo "⚠️  경고: app 모듈의 Gradle 스크립트가 없습니다. (app/build.gradle.kts 또는 app/build.gradle 확인)"
+  echo "    이전에 우리가 쓰던 기본 템플릿이 삭제되지 않았는지 확인해주세요."
+fi
+
+echo "✅ preflight-stabilize: 완료"

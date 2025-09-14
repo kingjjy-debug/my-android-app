@@ -1,1 +1,1 @@
-MainActivity.kt에 UI 갱신 및 SharedPreference 처리 코드 추가 필요. points.json 파일을 assets 폴더에 넣어야 합니다.  Material Design 3 적용 및 다크모드 지원을 위해 추가적인 작업 필요.
+WebView 대신 Intent로 외부 링크 연결. 버튼 터치 영역 및 Material3 디자인 적용은 추가 작업 필요. SharedPreferences를 이용한 완료 상태 저장 및 날짜 기반 초기화 구현. 네트워크 연결 실패 시 토스트 메시지 출력.
