@@ -1,3 +1,4 @@
 #!/data/data/com.termux/files/usr/bin/bash
 set -euo pipefail
-exec ~/myapp/tools/build-and-fetch.sh main
+~/myapp/tools/gen-code.sh
+~/myapp/tools/build-apk.sh main

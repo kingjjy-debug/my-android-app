@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MyApplication" parent="Theme.Material3.DayNight.NoActionBar">
+    <!-- Base application theme. -->
+    <style name="Theme.MyApp" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
-        <item name="colorPrimary">#6200EE</item>
+        <!--
+        <item name="colorPrimary">@color/my_light_primary</item>
+        <item name="colorPrimaryVariant">@color/my_light_primary_variant</item>
+        <item name="colorOnPrimary">@color/white</item>
+        -->
     </style>
 </resources>

@@ -7,27 +7,17 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 /** 모델 출력에서 JSON만 안전하게 뽑아내기 */
 function safeParseJson(raw) {
   let s = String(raw ?? "").trim();
-
-  // 코드펜스 제거
   s = s.replace(/^```json\s*/i, "")
        .replace(/^```\s*/i, "")
        .replace(/```$/i, "").trim();
 
-  // 1) 바로 파싱
   try { return JSON.parse(s); } catch {}
-
-  // 2) 첫 '{' ~ 마지막 '}' 범위
   const first = s.indexOf("{");
   const last  = s.lastIndexOf("}");
   if (first !== -1 && last !== -1 && last > first) {
-    const mid = s.slice(first, last + 1);
-    try { return JSON.parse(mid); } catch {}
+    try { return JSON.parse(s.slice(first, last + 1)); } catch {}
   }
-
-  // 3) 흔한 꼬리쉼표 제거
-  const noTrailing = s.replace(/,\s*([}\]])/g, "$1");
-  try { return JSON.parse(noTrailing); } catch {}
-
+  try { return JSON.parse(s.replace(/,\s*([}\]])/g, "$1")); } catch {}
   throw new Error("Model output is not valid JSON");
 }
 
@@ -48,7 +38,10 @@ async function main() {
   const descPath = process.argv[2] || "app_description.txt";
   const prompt = fs.readFileSync(descPath, "utf8");
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  // ✅ 모델을 2.5-pro로 고정
+  const modelName = "gemini-2.5-pro";
+  console.log(`▶ Using model: ${modelName}`);
+  const model = genAI.getGenerativeModel({ model: modelName });
 
   const schema = `
 당신은 안드로이드 앱 코드 생성기입니다.
@@ -98,14 +91,7 @@ async function main() {
   console.log("\n✅ Code generation done. Review changes, then build via CI.");
 }
 
-// 안전장치: 핸들되지 않은 예외 표시
-process.on("unhandledRejection", (e) => {
-  console.error("UnhandledRejection:", e);
-  process.exit(1);
-});
-process.on("uncaughtException", (e) => {
-  console.error("UncaughtException:", e);
-  process.exit(1);
-});
+process.on("unhandledRejection", (e) => { console.error("UnhandledRejection:", e); process.exit(1); });
+process.on("uncaughtException", (e) => { console.error("UncaughtException:", e); process.exit(1); });
 
 await main();
