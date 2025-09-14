@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 최소 안전 테마: Material3 DayNight NoActionBar -->
-    <style name="Theme.MyApp" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Theme.MyApplication" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">#6200EE</item>
+    </style>
 </resources>
