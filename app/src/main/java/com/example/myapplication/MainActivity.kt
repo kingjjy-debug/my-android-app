@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -7,52 +8,53 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
+import android.widget.ToggleButton
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import java.text.SimpleDateFormat
+import androidx.core.content.ContextCompat
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
-    private val pointData = Gson().fromJson<List<Point>>(applicationContext.assets.open("points.json").bufferedReader().use { it.readText() }, object : TypeToken<List<Point>>() {}.type)
+    private lateinit var textView: TextView
 
-    private val sharedPreferences by lazy { getSharedPreferences("app_data", Context.MODE_PRIVATE) }
+    private val data = listOf(
+        PointData("네이버페이", "https://pay.naver.com/", "https://m.help.pay.naver.com/faq/list.help?faqId=12979", "naverpay"),
+        PointData("OK캐시백", "https://www.okcashbag.com/", "https://www.koreanair.com/contents/skypass/earn-miles/travel-and-life/shopping-points", "okcashbag"),
+        PointData("L.POINT", "https://www.lpoint.com/", "https://www.lpoint.com/", "lpoint"),
+        PointData("신한카드 (마이신한포인트)", "", "https://www.shinhancard.com/", "shinhan"),
+        PointData("삼성카드 (보너스포인트)", "", "https://www.samsungcard.com/", "samsung"),
+        PointData("KB국민카드 (포인트리)", "", "https://card.kbcard.com/", "kb"),
+        PointData("현대카드 (M포인트)", "", "https://www.hyundaicard.com/", "hyundai")
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        textView = findViewById(R.id.textView)
 
-        val textView = findViewById<TextView>(R.id.textView)
-        val button = findViewById<Button>(R.id.button)
+        val sharedPref = getSharedPreferences("myPrefs", Context.MODE_PRIVATE)
+        val lastDate = sharedPref.getLong("lastDate", -1L)
+        val today = Calendar.getInstance().timeInMillis
 
-        var count = 0
-        button.setOnClickListener { 
-            count++
-            textView.text = "안녕하세요! ($count)"
+        if (lastDate != -1L && TimeUnit.DAYS.convert(today - lastDate, TimeUnit.MILLISECONDS) > 0) {
+            sharedPref.edit().clear().apply()
         }
-
-        resetIfNewDay()
+        data.forEach { addToggle(it) }
     }
 
-    private fun resetIfNewDay() {
-        val lastDate = sharedPreferences.getString("last_date", null)
-        val today = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
+    private fun addToggle(data: PointData) {
+        val toggle = ToggleButton(this)
+        toggle.textOff = "미완료"
+        toggle.textOn = "완료"
 
-        if (lastDate == null || lastDate != today) {
-            sharedPreferences.edit().clear().apply()
+        toggle.text = if(getSharedPreferences("myPrefs", Context.MODE_PRIVATE).getBoolean(data.key, false)) "완료" else "미완료"
+        toggle.isChecked = getSharedPreferences("myPrefs", Context.MODE_PRIVATE).getBoolean(data.key, false)
+
+        toggle.setOnCheckedChangeListener { _, isChecked -><
+            getSharedPreferences("myPrefs", Context.MODE_PRIVATE).edit().putBoolean(data.key, isChecked).apply()
         }
-        sharedPreferences.edit().putString("last_date", today).apply()
     }
 
+    data class PointData(val name: String, val earnUrl: String, val convertUrl: String, val key: String)
 }
-
-data class Point(
-    val name: String,
-    val earnUrl: String?,
-    val convertUrl: String,
-    val note: String,
-    val key: String
-)

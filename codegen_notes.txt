@@ -1,1 +1,1 @@
-assets 폴더에 points.json 파일을 추가해야 합니다.  MainActivity.kt는 현재 버튼 클릭시 "안녕하세요! (N)"만 출력합니다.  UI 구현은 완료되지 않았습니다.
+버튼 클릭 기능은 구현되지 않았습니다.  SharedPreferences를 이용한 완료 상태 저장 및 초기화 로직 추가했습니다. UI는 activity_main.xml에 추가적인 요소를 추가해야 합니다.
