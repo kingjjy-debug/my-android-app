@@ -4,4 +4,6 @@
     <string name="convert_to_miles">마일리지 전환하기</string>
     <string name="completed_mission">일일미션 수행 완료!</string>
     <string name="network_error_toast">연결할 수 없습니다. 네트워크 상태를 확인하세요.</string>
+    <string name="complete_mission">완료</string>
+    <string name="mission_accomplished">일일미션 수행 완료!</string>
 </resources>
