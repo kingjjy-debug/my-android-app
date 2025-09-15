@@ -5,6 +5,17 @@ plugins {
 
 android {
     namespace = "com.kingjjy.miles"
+    defaultConfig {
+        applicationId = "com.kingjjy.miles"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
+    buildFeatures {
+        viewBinding = true
+    }
+    namespace = "com.kingjjy.miles"
     compileSdk = 34
 
     defaultConfig {
@@ -44,6 +55,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
