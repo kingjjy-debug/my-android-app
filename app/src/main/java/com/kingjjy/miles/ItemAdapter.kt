@@ -1,5 +1,7 @@
 package com.kingjjy.miles
 
+import com.kingjjy.miles.R
+
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup

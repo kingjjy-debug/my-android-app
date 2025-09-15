@@ -1,5 +1,7 @@
 package com.kingjjy.miles
 
+import com.kingjjy.miles.R
+
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
