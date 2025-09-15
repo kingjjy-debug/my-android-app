@@ -1,1 +1,1 @@
-Jetpack Compose를 사용하여 단일 화면 UI를 구성하였으며, SharedPreferences를 통해 각 항목의 완료 상태를 기기에 저장하고 매일 자정에 자동으로 초기화합니다.
+요구사항에 따라 Material 3 디자인을 적용하고, SharedPreferences를 사용한 상태 저장 및 날짜 변경 시 초기화 기능을 구현했습니다. 모든 필수 파일과 ID 요건을 충족합니다.

@@ -1,0 +1,26 @@
+{
+  "model": "gemini-2.5-pro",
+  "packageName": "com.kingjjy.miles",
+  "requiredFiles": [
+    "app/src/main/AndroidManifest.xml",
+    "app/src/main/java/<PKG_PATH>/MainActivity.kt",
+    "app/src/main/java/<PKG_PATH>/Data.kt",
+    "app/src/main/java/<PKG_PATH>/ItemAdapter.kt",
+    "app/src/main/res/layout/activity_main.xml",
+    "app/src/main/res/layout/item_card.xml",
+    "app/src/main/res/values/strings.xml",
+    "app/src/main/res/values/styles.xml"
+  ],
+  "requiredViewIds": {
+    "app/src/main/res/layout/activity_main.xml": ["list"],
+    "app/src/main/res/layout/item_card.xml": ["item_title","item_convert_button","item_switch","item_completed_text"]
+  },
+  "acceptance": {
+    "mustUsePackage": true,
+    "mustShowAllItemsFromDescription": true,
+    "mustPersistState": true,
+    "mustResetByDate": true,
+    "mustHaveButtonsKo": true,
+    "no_tip_only_screen": true
+  }
+}
