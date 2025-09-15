@@ -1,6 +1,4 @@
 <resources>
-    <!-- 최소 테마 정의 (AppCompat 사용) -->
-    <style name="Theme.MyApp" parent="Theme.AppCompat.Light.NoActionBar" />
-    <!-- 혹시 다른 곳에서 참조할 수 있으니 같이 둠 -->
-    <style name="Theme.MyApplication" parent="Theme.AppCompat.Light.NoActionBar" />
+    <style name="Theme.MyApp" parent="Theme.AppCompat.Light.NoActionBar"/>
+    <style name="Theme.MyApplication" parent="Theme.AppCompat.Light.NoActionBar"/>
 </resources>

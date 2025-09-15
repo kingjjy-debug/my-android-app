@@ -4,29 +4,30 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.kingjjy.miles"
     compileSdk = 34
 
     defaultConfig {
         applicationId = "com.kingjjy.miles"
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
+        versionCode = 1
         versionName = "1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"    }
 
-buildTypes {
-        debug {
-            isDebuggable = true
-            signingConfig = signingConfigs.getByName("debug")
-        }
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+        }
+        debug {
+            // 디버그에서 testOnly 붙지 않도록(혹시 모를 플래그 차단)
+            isMinifyEnabled = false
         }
     }
 
@@ -37,13 +38,15 @@ buildTypes {
     kotlinOptions {
         jvmTarget = "17"
     }
+    buildFeatures {
+        viewBinding = true
+    }
 }
 
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
